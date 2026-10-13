@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sovereign Voice Orchestrator - Telemetry & Control</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0f17;
+      --card-bg: rgba(18, 25, 38, 0.75);
+      --card-inner: rgba(10, 15, 26, 0.85);
+      --border: rgba(56, 189, 248, 0.18);
+      --accent: #10b981;
+      --accent-glow: rgba(16, 185, 129, 0.35);
+      --cyan: #38bdf8;
+      --amber: #f59e0b;
+      --purple: #a855f7;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --danger: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.08) 0px, transparent 50%),
+        radial-gradient(at 50% 50%, rgba(15, 23, 42, 0.6) 0px, transparent 100%);
+      color: var(--text-main);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem 1rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 980px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 0.25rem;
+    }
+
+    .badge-top {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 0.3rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #34d399;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 10px #10b981;
+      animation: pulse 2s infinite;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #ffffff 40%, var(--cyan) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.25rem;
+    }
+
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    /* Hardware Status Grid */
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .status-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      backdrop-filter: blur(12px);
+    }
+
+    .status-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+
+    .status-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .status-value .status-led {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+
+    /* Main Console */
+    .console-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 1.75rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.25rem;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Orb & Audio visualizer */
+    .orb-container {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 150px;
+      height: 150px;
+    }
+
+    .pulse-ring {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 2px solid var(--accent);
+      opacity: 0.3;
+      transform: scale(0.9);
+      transition: all 0.3s ease;
+    }
+
+    .pulse-ring.active {
+      animation: ripple 2s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+    }
+
+    .orb-btn {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      background: radial-gradient(circle at 35% 35%, #1e293b 0%, #0f172a 100%);
+      color: white;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.3rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.6);
+      z-index: 2;
+    }
+
+    .orb-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 35px var(--accent-glow);
+      border-color: var(--accent);
+    }
+
+    .orb-btn.live {
+      background: radial-gradient(circle at 35% 35%, #065f46 0%, #022c22 100%);
+      border-color: #34d399;
+      box-shadow: 0 0 40px var(--accent-glow);
+    }
+
+    .orb-btn.speaking {
+      background: radial-gradient(circle at 35% 35%, #1e3a8a 0%, #0f172a 100%);
+      border-color: #60a5fa;
+      box-shadow: 0 0 45px rgba(59, 130, 246, 0.5);
+      animation: breathing 1.5s infinite alternate;
+    }
+
+    .orb-icon {
+      font-size: 1.8rem;
+    }
+
+    .orb-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    #visualizer-canvas {
+      width: 100%;
+      max-width: 440px;
+      height: 50px;
+      border-radius: 8px;
+    }
+
+    .state-banner {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(15, 23, 42, 0.7);
+      padding: 0.4rem 1.1rem;
+      border-radius: 9999px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Live Telemetry / Latency Breakdown Card */
+    .metrics-panel {
+      width: 100%;
+      background: var(--card-inner);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .metrics-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding-bottom: 0.5rem;
+    }
+
+    .metrics-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--cyan);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .metrics-links {
+      display: flex;
+      gap: 0.75rem;
+      font-size: 0.75rem;
+    }
+
+    .metrics-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-family: 'JetBrains Mono', monospace;
+      transition: color 0.2s;
+    }
+
+    .metrics-links a:hover {
+      color: var(--cyan);
+      text-decoration: underline;
+    }
+
+    .stages-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 0.5rem;
+    }
+
+    .stage-item {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      padding: 0.5rem 0.65rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .stage-name {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .stage-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    .stage-val.highlight {
+      color: #34d399;
+    }
+
+    .stage-val.warn {
+      color: #f59e0b;
+    }
+
+    /* Live Transcript Feed */
+    .transcript-box {
+      width: 100%;
+      background: var(--card-inner);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      max-height: 240px;
+      overflow-y: auto;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .msg-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      animation: fadeIn 0.2s ease-in;
+    }
+
+    .msg-user {
+      background: rgba(56, 189, 248, 0.08);
+      border-left: 3px solid var(--cyan);
+      align-self: flex-start;
+      width: 85%;
+    }
+
+    .msg-agent {
+      background: rgba(16, 185, 129, 0.08);
+      border-left: 3px solid var(--accent);
+      align-self: flex-end;
+      width: 85%;
+    }
+
+    .msg-author {
+      font-size: 0.7rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .msg-user .msg-author { color: var(--cyan); }
+    .msg-agent .msg-author { color: var(--accent); }
+
+    .msg-text {
+      color: var(--text-main);
+      line-height: 1.4;
+    }
+
+    /* Footer Info */
+    .terminal-tip {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px dashed rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 0.75rem 1.25rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .code-pill {
+      font-family: 'JetBrains Mono', monospace;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.1);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.6; transform: scale(0.95); }
+      50% { opacity: 1; transform: scale(1.1); }
+      100% { opacity: 0.6; transform: scale(0.95); }
+    }
+
+    @keyframes ripple {
+      0% { transform: scale(0.9); opacity: 0.8; }
+      100% { transform: scale(1.6); opacity: 0; }
+    }
+
+    @keyframes breathing {
+      0% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
+      100% { box-shadow: 0 0 50px rgba(59, 130, 246, 0.85); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="badge-top">
+        <span class="badge-dot"></span>
+        Zero Cloud APIs &bull; 100% Local Neural Edge &bull; Full End-to-End Tracing
+      </div>
+      <h1>Sovereign Voice Orchestrator</h1>
+      <p class="subtitle">Real-Time Telemetry, Timing Breakdown & Neural Diagnostics</p>
+    </header>
+
+    <!-- System Status Grid -->
+    <div class="status-grid">
+      <div class="status-card">
+        <span class="status-label">STT (Ear)</span>
+        <span class="status-value"><span class="status-led"></span>Whisper CUDA</span>
+      </div>
+      <div class="status-card">
+        <span class="status-label">LLM (Brain)</span>
+        <span class="status-value"><span class="status-led"></span>Qwen 2.5 1.5B</span>
+      </div>
+      <div class="status-card">
+        <span class="status-label">TTS (Mouth)</span>
+        <span class="status-value"><span class="status-led"></span>Kokoro-82M</span>
+      </div>
+      <div class="status-card">
+        <span class="status-label">VAD Engine</span>
+        <span class="status-value"><span class="status-led"></span>Silero ONNX</span>
+      </div>
+      <div class="status-card">
+        <span class="status-label">Active Turn #</span>
+        <span class="status-value" id="status-turn-no" style="color: #38bdf8;">None</span>
+      </div>
+    </div>
+
+    <!-- Main Live Interaction Console -->
+    <div class="console-card">
+      <div class="orb-container">
+        <div id="pulse-ring" class="pulse-ring"></div>
+        <button id="voice-btn" class="orb-btn">
+          <span id="orb-icon" class="orb-icon">🎙️</span>
+          <span id="orb-label" class="orb-label">Start Voice</span>
+        </button>
+      </div>
+
+      <div id="state-banner" class="state-banner">
+        <span>Click the microphone to start real-time session</span>
+      </div>
+
+      <canvas id="visualizer-canvas"></canvas>
+
+      <!-- Live Telemetry / Stage Latency Breakdown Card -->
+      <div class="metrics-panel">
+        <div class="metrics-header">
+          <div class="metrics-title">
+            <span>⚡ End-to-End Turn Timing Breakdown</span>
+            <span id="turn-badge" style="font-size: 0.7rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">(Waiting for turn)</span>
+          </div>
+          <div class="metrics-links">
+            <a href="/logs" target="_blank">&#128196; View Server Logs</a>
+            <a href="/metrics" target="_blank">&#128202; View JSON Metrics</a>
+            <a href="/health" target="_blank">&#128260; Health</a>
+          </div>
+        </div>
+
+        <div class="stages-grid">
+          <div class="stage-item">
+            <span class="stage-name">Total Roundtrip</span>
+            <span class="stage-val highlight" id="m-total">-- ms</span>
+          </div>
+          <div class="stage-item">
+            <span class="stage-name">VAD Endpointing</span>
+            <span class="stage-val" id="m-vad">-- ms</span>
+          </div>
+          <div class="stage-item">
+            <span class="stage-name">Whisper STT</span>
+            <span class="stage-val" id="m-stt">-- ms</span>
+          </div>
+          <div class="stage-item">
+            <span class="stage-name">LLM TTFT</span>
+            <span class="stage-val" id="m-llm">-- ms</span>
+          </div>
+          <div class="stage-item">
+            <span class="stage-name">Kokoro TTS</span>
+            <span class="stage-val warn" id="m-tts">-- ms</span>
+          </div>
+          <div class="stage-item">
+            <span class="stage-name">Browser Audio RTT</span>
+            <span class="stage-val" id="m-rtt">-- ms</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Transcripts -->
+      <div class="transcript-box" id="transcript-box">
+        <div class="msg-item msg-agent">
+          <span class="msg-author">SYSTEM</span>
+          <span class="msg-text">All neural models active with full tracing. Log stream writing to logs/server.log and logs/turns.jsonl. Speak naturally.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Terminal Alternative Info -->
+    <div class="terminal-tip">
+      <span>Native Terminal Client with Tracing:</span>
+      <div>Run: <span class="code-pill">.\venv\Scripts\python.exe test_client.py</span></div>
+    </div>
+  </div>
+
+  <script>
+    const SAMPLE_RATE = 16000;
+    const CHUNK_SIZE = 512;
+    let ws = null;
+    let audioCtx = null;
+    let micStream = null;
+    let scriptProcessor = null;
+    let isSessionActive = false;
+    let audioPlaybackQueue = [];
+    let isPlayingAudio = false;
+    let lastAudioRecvTime = null;
+
+    const voiceBtn = document.getElementById('voice-btn');
+    const orbIcon = document.getElementById('orb-icon');
+    const orbLabel = document.getElementById('orb-label');
+    const pulseRing = document.getElementById('pulse-ring');
+    const stateBanner = document.getElementById('state-banner');
+    const transcriptBox = document.getElementById('transcript-box');
+    const canvas = document.getElementById('visualizer-canvas');
+    const canvasCtx = canvas.getContext('2d');
+
+    // Telemetry metric elements
+    const turnBadge = document.getElementById('turn-badge');
+    const statusTurnNo = document.getElementById('status-turn-no');
+    const mTotal = document.getElementById('m-total');
+    const mVad = document.getElementById('m-vad');
+    const mStt = document.getElementById('m-stt');
+    const mLlm = document.getElementById('m-llm');
+    const mTts = document.getElementById('m-tts');
+    const mRtt = document.getElementById('m-rtt');
+
+    // Visualizer canvas setup
+    canvas.width = 440;
+    canvas.height = 50;
+    let visualizerData = new Array(32).fill(4);
+
+    function drawVisualizer() {
+      canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+      const barWidth = (canvas.width / visualizerData.length) - 4;
+      for (let i = 0; i < visualizerData.length; i++) {
+        const h = visualizerData[i];
+        const x = i * (barWidth + 4);
+        const y = (canvas.height - h) / 2;
+        canvasCtx.fillStyle = isPlayingAudio ? '#60a5fa' : (isSessionActive ? '#10b981' : '#334155');
+        canvasCtx.beginPath();
+        canvasCtx.roundRect(x, y, barWidth, h, 3);
+        canvasCtx.fill();
+      }
+      requestAnimationFrame(drawVisualizer);
+    }
+    requestAnimationFrame(drawVisualizer);
+
+    function appendMessage(role, text) {
+      const item = document.createElement('div');
+      item.className = 'msg-item ' + (role.toLowerCase() === 'user' ? 'msg-user' : 'msg-agent');
+      
+      const author = document.createElement('span');
+      author.className = 'msg-author';
+      author.innerText = role.toUpperCase();
+      
+      const content = document.createElement('span');
+      content.className = 'msg-text';
+      content.innerText = text;
+      
+      item.appendChild(author);
+      item.appendChild(content);
+      transcriptBox.appendChild(item);
+      transcriptBox.scrollTop = transcriptBox.scrollHeight;
+    }
+
+    function updateTurnMetrics(data) {
+      const s = data.stages_ms || {};
+      const turn = data.turn || '?';
+      turnBadge.innerText = `Turn #${turn} (${data.outcome || 'done'})`;
+      statusTurnNo.innerText = `#${turn}`;
+
+      const total = s.speech_end_to_first_audio || s.trigger_to_first_audio;
+      mTotal.innerText = total ? `${total.toFixed(0)} ms` : '-- ms';
+      mVad.innerText = s.endpointing_wait ? `${s.endpointing_wait.toFixed(0)} ms` : '-- ms';
+      mStt.innerText = s.stt ? `${s.stt.toFixed(0)} ms` : '-- ms';
+      mLlm.innerText = s.llm_ttft ? `${s.llm_ttft.toFixed(0)} ms` : '-- ms';
+      mTts.innerText = s.tts_first_synth ? `${s.tts_first_synth.toFixed(0)} ms` : '-- ms';
+    }
+
+    async function toggleVoiceSession() {
+      if (isSessionActive) {
+        stopVoiceSession();
+      } else {
+        await startVoiceSession();
+      }
+    }
+
+    async function startVoiceSession() {
+      try {
+        stateBanner.innerText = "Connecting to WebSocket...";
+        
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        ws = new WebSocket(`${protocol}//${window.location.host}/ws/voice`);
+        ws.binaryType = 'arraybuffer';
+
+        ws.onopen = async () => {
+          stateBanner.innerText = "Accessing microphone...";
+          await setupMicrophone();
+          isSessionActive = true;
+          voiceBtn.classList.add('live');
+          pulseRing.classList.add('active');
+          orbIcon.innerText = "⏹️";
+          orbLabel.innerText = "Stop";
+          stateBanner.innerText = "🎙️ Listening... Speak naturally.";
+
+          // Notify server
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+              type: "client_event",
+              event: "session_ready",
+              userAgent: navigator.userAgent
+            }));
+          }
+        };
+
+        ws.onmessage = async (event) => {
+          if (typeof event.data === 'string') {
+            const data = JSON.parse(event.data);
+            if (data.type === 'interrupt') {
+              stateBanner.innerText = "⚡ Interrupted (Barge-in)";
+              audioPlaybackQueue = [];
+              isPlayingAudio = false;
+              voiceBtn.classList.remove('speaking');
+              if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: "client_event", event: "client_interrupted" }));
+              }
+            } else if (data.type === 'transcript') {
+              appendMessage(data.role, data.text);
+            } else if (data.type === 'turn_metrics') {
+              updateTurnMetrics(data);
+            }
+          } else if (event.data instanceof ArrayBuffer) {
+            lastAudioRecvTime = performance.now();
+            enqueueAudio(event.data);
+          }
+        };
+
+        ws.onclose = () => {
+          stopVoiceSession();
+          stateBanner.innerText = "Session closed. Click to reconnect.";
+        };
+
+        ws.onerror = (err) => {
+          console.error("WS error:", err);
+          stopVoiceSession();
+          stateBanner.innerText = "WebSocket connection failed.";
+        };
+
+      } catch (err) {
+        console.error("Session start error:", err);
+        stopVoiceSession();
+        stateBanner.innerText = "Microphone error: " + err.message;
+      }
+    }
+
+    async function setupMicrophone() {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+      micStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          sampleRate: 16000,
+          echoCancellation: true,
+          noiseSuppression: true
+        }
+      });
+
+      const source = audioCtx.createMediaStreamSource(micStream);
+      scriptProcessor = audioCtx.createScriptProcessor(CHUNK_SIZE, 1, 1);
+
+      scriptProcessor.onaudioprocess = (e) => {
+        if (!isSessionActive || !ws || ws.readyState !== WebSocket.OPEN) return;
+
+        const inputData = e.inputBuffer.getChannelData(0);
+
+        // Visualizer amplitude
+        let sum = 0;
+        for (let i = 0; i < inputData.length; i++) {
+          sum += Math.abs(inputData[i]);
+        }
+        const avg = sum / inputData.length;
+        visualizerData = visualizerData.map((_, i) => Math.min(45, Math.max(4, avg * 180 * (1 + Math.sin(i)))));
+
+        // Float32 -> Int16 PCM
+        const pcmChunk = new Int16Array(inputData.length);
+        for (let i = 0; i < inputData.length; i++) {
+          let s = Math.max(-1, Math.min(1, inputData[i]));
+          pcmChunk[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        }
+
+        ws.send(pcmChunk.buffer);
+      };
+
+      source.connect(scriptProcessor);
+      scriptProcessor.connect(audioCtx.destination);
+    }
+
+    function enqueueAudio(arrayBuffer) {
+      voiceBtn.classList.add('speaking');
+      stateBanner.innerText = "🗣️ Agent is speaking...";
+
+      const int16Array = new Int16Array(arrayBuffer);
+      const float32Array = new Float32Array(int16Array.length);
+      for (let i = 0; i < int16Array.length; i++) {
+        float32Array[i] = int16Array[i] / 32768.0;
+      }
+
+      audioPlaybackQueue.push(float32Array);
+      if (!isPlayingAudio) {
+        playNextAudio();
+      }
+    }
+
+    function playNextAudio() {
+      if (audioPlaybackQueue.length === 0) {
+        isPlayingAudio = false;
+        voiceBtn.classList.remove('speaking');
+        if (isSessionActive) {
+          stateBanner.innerText = "🎙️ Listening... Speak naturally.";
+        }
+        return;
+      }
+
+      isPlayingAudio = true;
+      const float32Data = audioPlaybackQueue.shift();
+      if (!audioCtx) audioCtx = new AudioContext({ sampleRate: 16000 });
+
+      const audioBuffer = audioCtx.createBuffer(1, float32Data.length, 16000);
+      audioBuffer.getChannelData(0).set(float32Data);
+
+      const source = audioCtx.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(audioCtx.destination);
+      source.onended = () => {
+        playNextAudio();
+      };
+
+      const tPlayStart = performance.now();
+      if (lastAudioRecvTime) {
+        const clientSchedMs = tPlayStart - lastAudioRecvTime;
+        mRtt.innerText = `${clientSchedMs.toFixed(0)} ms`;
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: "client_event",
+            event: "playback_started",
+            client_schedule_ms: clientSchedMs
+          }));
+        }
+        lastAudioRecvTime = null;
+      }
+
+      source.start();
+    }
+
+    function stopVoiceSession() {
+      isSessionActive = false;
+      if (ws) {
+        ws.close();
+        ws = null;
+      }
+      if (scriptProcessor) {
+        scriptProcessor.disconnect();
+        scriptProcessor = null;
+      }
+      if (micStream) {
+        micStream.getTracks().forEach(t => t.stop());
+        micStream = null;
+      }
+      if (audioCtx) {
+        audioCtx.close();
+        audioCtx = null;
+      }
+
+      audioPlaybackQueue = [];
+      isPlayingAudio = false;
+
+      voiceBtn.classList.remove('live');
+      voiceBtn.classList.remove('speaking');
+      pulseRing.classList.remove('active');
+      orbIcon.innerText = "🎙️";
+      orbLabel.innerText = "Start Voice";
+      stateBanner.innerText = "Session stopped. Click to start.";
+      visualizerData = new Array(32).fill(4);
+    }
+
+    voiceBtn.addEventListener('click', toggleVoiceSession);
+  </script>
+</body>
+</html>
