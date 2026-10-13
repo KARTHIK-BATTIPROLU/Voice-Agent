@@ -1,0 +1,1 @@
+All visitors must register at Mokila Gate 1 before entering the campus.

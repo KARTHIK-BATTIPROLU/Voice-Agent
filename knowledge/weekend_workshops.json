@@ -1,0 +1,36 @@
+{
+  "institution": "Janbright World School",
+  "location": "Mokila, Hyderabad",
+  "schedule": {
+    "days": ["Every Saturday"],
+    "slot_morning": "Saturday 10:30 AM",
+    "slot_afternoon": "Saturday 03:00 PM"
+  },
+  "cost": "Complimentary trial workshop (100% Free)",
+  "workshops": [
+    {
+      "activity": "Robotics",
+      "target_age": "Ages 7-14",
+      "grades": "Grade 2 to Grade 9",
+      "description": "Hands-on robotics engineering, micro-controllers, Arduino programming, and sensor integration in our STEAM Makerspace.",
+      "available_slots": ["Saturday 10:30 AM", "Saturday 03:00 PM"],
+      "session_duration": "90 minutes"
+    },
+    {
+      "activity": "Archery",
+      "target_age": "Ages 9-16",
+      "grades": "Grade 4 to Grade 11",
+      "description": "Olympic recurve archery fundamentals, stance, precision targeting, and safety taught by certified national coaches.",
+      "available_slots": ["Saturday 10:30 AM", "Saturday 03:00 PM"],
+      "session_duration": "90 minutes"
+    },
+    {
+      "activity": "Swimming",
+      "target_age": "Ages 6-15",
+      "grades": "Grade 1 to Grade 10",
+      "description": "Temperature-controlled Olympic pool training covering stroke mechanics, endurance, and water safety with licensed lifeguards.",
+      "available_slots": ["Saturday 10:30 AM", "Saturday 03:00 PM"],
+      "session_duration": "90 minutes"
+    }
+  ]
+}
