@@ -1,0 +1,4 @@
+# Keep models directory in Git repository
+# Download weights using scripts/setup_env.ps1 or scripts/setup_env.sh:
+# - kokoro-v0_19.onnx
+# - voices.bin

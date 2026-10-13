@@ -1,0 +1,45 @@
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+
+# Python Cache & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Large Model Weights (Downloaded automatically via scripts/setup_env.ps1 / setup_env.sh)
+models/*.onnx
+models/*.bin
+models/*.pt
+models/*.safetensors
+!models/.gitkeep
+
+# SQLite Databases & Dynamic Ledgers
+*.db
+*.sqlite
+*.sqlite3
+enterprise_ledger.db
+school_enterprise.db
+
+# Runtime Logs & Real-Time Event Streams
+logs/*.log
+logs/*.jsonl
+!logs/.gitkeep
+
+# System & IDE artifacts
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Secrets & Environment configs
+.env
+.env.local
+*.pem
+*.key
