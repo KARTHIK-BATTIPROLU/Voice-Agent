@@ -127,16 +127,18 @@ async def voice_websocket(ws: WebSocket):
     ua = ws.headers.get("user-agent", "")
     tm.event("WS", "accepted", client=client, user_agent=ua[:100],
              accept_ms=round((time.perf_counter() - t_conn) * 1000, 1))
-    session = SessionOrchestrator(ws, shared_stt, shared_tts, shared_vad)
+    from app.call_agent import JanbrightSessionOrchestrator
+    session = JanbrightSessionOrchestrator(ws, shared_stt, shared_tts, shared_vad, audio_format="pcm16")
     try:
         await session.run()
     except WebSocketDisconnect:
         session.is_active = False
-        tm.event("WS", "disconnect_exception", session.sid, level="WARNING")
+        tm.event("WS", "disconnect", level="INFO")
     except Exception as e:
         session.is_active = False
-        tm.event("WS", "session_crashed", session.sid, level="ERROR", error=f"{type(e).__name__}: {e}")
-        raise
+        tm.event("WS", "session_exception", level="WARNING", error=str(e))
+        print(f"[Voice WS Exception]: {e}", flush=True)
+
 
 
 @app.websocket("/ws/call-stream")

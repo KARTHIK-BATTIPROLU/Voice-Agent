@@ -145,13 +145,21 @@ def main():
     except Exception:
         pass
 
+    fastapi_retries = 0
     try:
         while True:
             f_code = fastapi_proc.poll()
             if f_code is not None:
-                print(f"[ERROR]: FastAPI backend exited unexpectedly with code {f_code}", flush=True)
-                shutdown()
-                break
+                fastapi_retries += 1
+                if fastapi_retries <= 3:
+                    print(f"[WARNING]: FastAPI backend exited (code {f_code}); auto-recovering backend (attempt {fastapi_retries}/3)...", flush=True)
+                    time.sleep(1.5)
+                    fastapi_proc = subprocess.Popen(fastapi_cmd)
+                    continue
+                else:
+                    print(f"[ERROR]: FastAPI backend exited repeatedly with code {f_code}", flush=True)
+                    shutdown()
+                    break
             s_code = streamlit_proc.poll()
             if s_code is not None:
                 print(f"[ERROR]: Streamlit dashboard exited unexpectedly with code {s_code}", flush=True)

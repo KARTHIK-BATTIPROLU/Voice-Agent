@@ -772,7 +772,7 @@
       const float32Data = audioPlaybackQueue.shift();
       if (!audioCtx) audioCtx = new AudioContext({ sampleRate: 16000 });
 
-      const audioBuffer = audioCtx.createBuffer(1, float32Data.length, 16000);
+      const audioBuffer = audioCtx.createBuffer(1, float32Data.length, 24000);
       audioBuffer.getChannelData(0).set(float32Data);
 
       const source = audioCtx.createBufferSource();
