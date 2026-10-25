@@ -71,19 +71,19 @@ def main():
     print(f"      Using Python environment: {python_exe}")
 
     # Step 3: Launch FastAPI Audio Backend
-    print("[3/4] Launching FastAPI Sovereign Voice Server on http://127.0.0.1:8000...")
+    print("[3/4] Launching FastAPI Sovereign Voice Server on http://127.0.0.1:8005...")
     fastapi_cmd = [
         python_exe, "-m", "uvicorn", "app.main:app",
         "--host", "127.0.0.1",
-        "--port", "8000",
+        "--port", "8005",
         "--log-level", "warning"
     ]
-    fastapi_proc = subprocess.Popen(fastapi_cmd)
+    fastapi_proc = subprocess.Popen(fastapi_cmd, stdin=subprocess.DEVNULL)
 
     # Poll for backend readiness
     print("      Waiting for FastAPI server to initialize neural models...")
     for _ in range(30):
-        if check_url("http://127.0.0.1:8000/health"):
+        if check_url("http://127.0.0.1:8005/health"):
             print("      FastAPI Audio Backend is LIVE and healthy!")
             break
         time.sleep(1.0)
@@ -98,14 +98,14 @@ def main():
         "--server.headless", "true",
         "--theme.base", "dark"
     ]
-    streamlit_proc = subprocess.Popen(streamlit_cmd)
+    streamlit_proc = subprocess.Popen(streamlit_cmd, stdin=subprocess.DEVNULL)
 
     print("\n" + "=" * 80)
     print("[*] PLATFORM SERVICES CONCURRENTLY OPERATIONAL")
     print("=" * 80)
     print("  [>] Executive Streamlit Dashboard : http://127.0.0.1:8501")
-    print("  [>] FastAPI Backend & Health Docs  : http://127.0.0.1:8000/health")
-    print("  [>] WebSocket Audio Gateway       : ws://127.0.0.1:8000/ws/call-stream")
+    print("  [>] FastAPI Backend & Health Docs  : http://127.0.0.1:8005/health")
+    print("  [>] WebSocket Audio Gateway       : ws://127.0.0.1:8005/ws/call-stream")
     print("=" * 80)
     print("Press Ctrl+C to cleanly stop all platform services.\n", flush=True)
 
@@ -154,7 +154,7 @@ def main():
                 if fastapi_retries <= 3:
                     print(f"[WARNING]: FastAPI backend exited (code {f_code}); auto-recovering backend (attempt {fastapi_retries}/3)...", flush=True)
                     time.sleep(1.5)
-                    fastapi_proc = subprocess.Popen(fastapi_cmd)
+                    fastapi_proc = subprocess.Popen(fastapi_cmd, stdin=subprocess.DEVNULL)
                     continue
                 else:
                     print(f"[ERROR]: FastAPI backend exited repeatedly with code {f_code}", flush=True)
